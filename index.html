@@ -3,195 +3,364 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WNovel Pro - Spirit Realm</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Spirit Stones Empire | Sovereign Writer Edition</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
     <style>
-        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .accent-gradient { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; display: flex; justify-content: space-around; align-items: center; background: #1e293b; border-top: 1px solid #334155; z-index: 50; }
-        .spin-btn { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-    </style>
-</head>
-<body class="pb-24">
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
 
-    <header class="p-4 flex justify-between items-center glass sticky top-0 z-40">
-        <h1 class="text-xl font-bold italic tracking-tighter text-blue-400">WNOVEL <span class="text-white">PRO</span></h1>
-        <div id="user-info" class="flex items-center gap-3">
-            <div class="flex items-center bg-slate-800 px-3 py-1 rounded-full border border-blue-500/30">
-                <span class="text-yellow-400 mr-2">💎</span>
-                <span id="stone-count" class="font-bold">0</span>
-            </div>
-            <button id="login-btn" class="text-sm bg-blue-600 px-4 py-1 rounded-md font-medium">Login</button>
-            <img id="user-pfp" class="w-8 h-8 rounded-full hidden border-2 border-blue-400">
-        </div>
-    </header>
-
-    <main id="app-content" class="p-4">
-        
-        <section id="spin-section" class="mb-8">
-            <div class="glass rounded-2xl p-6 text-center">
-                <h2 class="text-lg font-bold mb-2 text-blue-300">Daily Lucky Spin</h2>
-                <p class="text-xs text-slate-400 mb-4">Cost: 5 Spirit Stones</p>
-                <div id="wheel" class="text-6xl mb-6 transition-all duration-500">🎡</div>
-                <button id="spin-trigger" class="spin-btn accent-gradient w-full py-3 rounded-xl font-bold shadow-lg">SPIN NOW</button>
-            </div>
-        </section>
-
-        <section id="writer-section" class="hidden mb-8">
-            <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-1 rounded-2xl">
-                <div class="bg-slate-900 rounded-2xl p-5">
-                    <h2 class="font-bold text-blue-400 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-pen-nib"></i> Author Tools
-                    </h2>
-                    <input type="text" id="novel-title" placeholder="Novel Title..." class="w-full bg-slate-800 border border-slate-700 p-3 rounded-lg mb-3 outline-none">
-                    <textarea id="novel-synopsis" placeholder="Synopsys..." class="w-full bg-slate-800 border border-slate-700 p-3 rounded-lg mb-3 h-24 outline-none"></textarea>
-                    <button id="publish-btn" class="w-full bg-emerald-600 py-2 rounded-lg font-bold">Publish Novel</button>
-                </div>
-            </div>
-        </section>
-
-        <div id="novel-feed" class="space-y-4">
-            <p class="text-center text-slate-500 py-10">Sign in to start your cultivation journey...</p>
-        </div>
-    </main>
-
-    <nav class="bottom-nav">
-        <button class="flex flex-col items-center text-blue-400"><i class="fa-solid fa-house text-xl"></i><span class="text-[10px] mt-1">Library</span></button>
-        <button class="flex flex-col items-center text-slate-400"><i class="fa-solid fa-compass text-xl"></i><span class="text-[10px] mt-1">Explore</span></button>
-        <button class="flex flex-col items-center text-slate-400"><i class="fa-solid fa-book-open text-xl"></i><span class="text-[10px] mt-1">Write</span></button>
-        <button class="flex flex-col items-center text-slate-400"><i class="fa-solid fa-user text-xl"></i><span class="text-[10px] mt-1">Profile</span></button>
-    </nav>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // CONFIG MO (WNOVEL-AAA99)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBz0refxUq767lr0pYXbXBG6Ns4RBG4eVs",
-            authDomain: "wnovel-aaa99.firebaseapp.com",
-            projectId: "wnovel-aaa99",
-            storageBucket: "wnovel-aaa99.firebasestorage.app",
-            messagingSenderId: "476794649269",
-            appId: "1:476794649269:web:ffc69d8f26849d30f9dcfc"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
-
-        let currentUser = null;
-
-        // LOGIN LOGIC
-        document.getElementById('login-btn').addEventListener('click', async () => {
-            if (!currentUser) {
-                try {
-                    const result = await signInWithPopup(auth, provider);
-                    console.log("Logged in!");
-                } catch (e) { alert("Login failed: " + e.message); }
-            } else {
-                await signOut(auth);
-                location.reload();
-            }
-        });
-
-        // AUTH LISTENER
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('login-btn').innerText = "Logout";
-                document.getElementById('user-pfp').src = user.photoURL;
-                document.getElementById('user-pfp').classList.remove('hidden');
-                document.getElementById('writer-section').classList.remove('hidden');
-                
-                // Load/Create User Profile
-                const userRef = doc(db, "users", user.uid);
-                const userSnap = await getDoc(userRef);
-                if (!userSnap.exists()) {
-                    await setDoc(userRef, { stones: 100, name: user.displayName });
-                }
-                
-                // Real-time stones update
-                onSnapshot(userRef, (doc) => {
-                    document.getElementById('stone-count').innerText = doc.data().stones || 0;
-                });
-                
-                loadNovels();
-            }
-        });
-
-        // LUCKY SPIN LOGIC
-        document.getElementById('spin-trigger').addEventListener('click', async () => {
-            if (!currentUser) return alert("Login muna, Cultivator!");
-            
-            const userRef = doc(db, "users", currentUser.uid);
-            const userSnap = await getDoc(userRef);
-            const stones = userSnap.data().stones;
-
-            if (stones < 5) return alert("Kulang ang Spirit Stones mo!");
-
-            const wheel = document.getElementById('wheel');
-            wheel.classList.add('rotate-180');
-            
-            // Random rewards
-            const rewards = [0, 2, 10, 20, 50, 5, 1];
-            const prize = rewards[Math.floor(Math.random() * rewards.length)];
-
-            setTimeout(async () => {
-                await updateDoc(userRef, { stones: increment(prize - 5) });
-                wheel.classList.remove('rotate-180');
-                alert(`You got ${prize} Spirit Stones!`);
-            }, 500);
-        });
-
-        // LOAD NOVELS
-        function loadNovels() {
-            const q = query(collection(db, "novels"), orderBy("createdAt", "desc"));
-            onSnapshot(q, (snapshot) => {
-                const feed = document.getElementById('novel-feed');
-                feed.innerHTML = "";
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    feed.innerHTML += `
-                        <div class="glass p-4 rounded-xl flex gap-4">
-                            <div class="w-20 h-28 bg-slate-700 rounded-md shadow-inner flex-shrink-0 flex items-center justify-center text-xs text-slate-500 italic">No Cover</div>
-                            <div class="flex-1">
-                                <h3 class="font-bold text-blue-400">${data.title}</h3>
-                                <p class="text-xs text-slate-400 line-clamp-2 mt-1">${data.synopsis}</p>
-                                <div class="mt-3 flex items-center justify-between">
-                                    <span class="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-500">Author: ${data.authorName}</span>
-                                    <button class="text-xs text-blue-500 font-bold">READ <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-            });
+        :root { 
+            --primary: #3b82f6; --bg: #020617; --card: #111827; --text: #f8fafc; 
+            --accent: #fbbf24; --stone: #0ea5e9; --rank: #818cf8; --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
         }
 
-        // PUBLISH NOVEL
-        document.getElementById('publish-btn').addEventListener('click', async () => {
-            const title = document.getElementById('novel-title').value;
-            const syn = document.getElementById('novel-synopsis').value;
-            if (!title || !syn) return alert("Fill up all fields!");
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; transition: all 0.2s ease; }
 
-            await setDoc(doc(collection(db, "novels")), {
-                title: title,
-                synopsis: syn,
-                authorName: currentUser.displayName,
-                authorId: currentUser.uid,
-                createdAt: new Date()
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); 
+            margin: 0; padding-bottom: 100px; overflow-x: hidden; line-height: 1.6;
+            background-image: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 100%);
+        }
+
+        .container { max-width: 500px; margin: auto; padding: 20px; }
+
+        /* --- UI COMPONENTS --- */
+        .card { 
+            background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--border);
+            padding: 22px; border-radius: 28px; margin-bottom: 20px;
+        }
+
+        .status-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        
+        .spirit-badge { 
+            background: rgba(14, 165, 233, 0.1); color: var(--stone); padding: 8px 16px; 
+            border-radius: 50px; font-weight: 800; font-size: 13px; border: 1px solid rgba(14, 165, 233, 0.3);
+        }
+
+        .novel-item { 
+            display: flex; gap: 15px; background: var(--glass); padding: 15px; border-radius: 24px; 
+            margin-bottom: 15px; border: 1px solid var(--border); cursor: pointer;
+        }
+        .novel-item img { width: 85px; height: 120px; border-radius: 16px; object-fit: cover; }
+
+        .tag { font-size: 9px; padding: 3px 8px; border-radius: 5px; background: rgba(255,255,255,0.08); color: #94a3b8; margin-right: 4px; }
+
+        .input-style { 
+            width: 100%; padding: 15px; margin-bottom: 12px; background: #0b0f1a; color: white; 
+            border: 1px solid var(--border); border-radius: 16px; font-size: 14px; outline: none;
+        }
+
+        .btn-primary { 
+            background: linear-gradient(135deg, #2563eb, #60a5fa); color: white; width: 100%; 
+            padding: 16px; border: none; border-radius: 18px; font-weight: 800; cursor: pointer; font-size: 14px;
+        }
+        .btn-secondary { background: #1e293b; color: white; width: 100%; padding: 12px; border: none; border-radius: 14px; cursor: pointer; font-size: 13px; margin-top: 10px; }
+
+        /* --- NAV BAR --- */
+        .nav-bar { 
+            position: fixed; bottom: 20px; width: 90%; max-width: 450px; left: 50%; transform: translateX(-50%); 
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(25px); display: flex; 
+            padding: 12px; border-radius: 30px; border: 1px solid var(--border); z-index: 1000;
+        }
+        .nav-item { font-size: 10px; font-weight: 800; color: #64748b; text-align: center; flex: 1; cursor: pointer; }
+        .nav-item.active { color: var(--primary); }
+
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.4s ease; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 2000; display: none; overflow-y: auto; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="status-bar">
+        <div>
+            <h2 id="rankDisplay" style="margin:0; font-size: 18px; color: var(--rank); font-weight: 800;">Mortal</h2>
+            <div id="xpCounter" style="font-size:11px; color:var(--accent);">LVL 1 • 0 XP</div>
+        </div>
+        <div id="stonesCounter" class="spirit-badge">✨ 0</div>
+    </div>
+
+    <div id="home" class="section active">
+        <h3 style="font-weight: 800;">Immortal Archive</h3>
+        <div id="onlineNovels"></div>
+    </div>
+
+    <div id="vault" class="section">
+        <div class="card" style="border-color: var(--stone);">
+            <h4 style="margin:0; color:var(--stone);">🧘 SPIRIT MEDITATION</h4>
+            <p style="font-size:11px; opacity:0.7;">Watch vision for +10 Stones. (2h Cooldown)</p>
+            <button id="rewardAdBtn" class="btn-primary" style="background:var(--stone);">COLLECT QI</button>
+            <div id="adTimer" style="text-align:center; font-size:11px; color:#ef4444; margin-top:8px; font-weight: 700; display:none;"></div>
+        </div>
+        <h4>Your Universe</h4>
+        <div id="myNovelsList"></div>
+    </div>
+
+    <div id="inbox" class="section">
+        <div class="card" style="height: 450px; display: flex; flex-direction: column;">
+            <div id="chatBox" style="flex:1; overflow-y:auto;"></div>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <input id="chatIn" placeholder="Type message..." class="input-style" style="margin:0;">
+                <button onclick="sendChat()" class="btn-primary" style="width:70px;">SEND</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="write" class="section">
+        <div id="loginBox">
+            <div class="card">
+                <h3 style="text-align:center;">Heaven's Gate</h3>
+                <input id="emailIn" placeholder="Email" class="input-style">
+                <input id="passIn" type="password" placeholder="Password" class="input-style">
+                <button onclick="emailLogin()" class="btn-primary">LOGIN / SIGNUP</button>
+                <button onclick="googleLogin()" class="btn-secondary" style="background:#db4437;">LOG IN WITH GOOGLE</button>
+                <button onclick="guestLogin()" class="btn-secondary">CONTINUE AS GUEST</button>
+            </div>
+        </div>
+
+        <div id="authorTools" style="display:none;">
+            <div class="card">
+                <h3 style="margin:0 0 15px 0;">Story Genesis</h3>
+                <input id="novelTitle" placeholder="Novel Title" class="input-style">
+                <select id="novelGenre" class="input-style">
+                    <option value="Xianxia">Xianxia</option>
+                    <option value="System">System / Game</option>
+                    <option value="Fantasy">Fantasy</option>
+                    <option value="Romance">Romance</option>
+                </select>
+                <input id="novelTags" placeholder="Tags (Rebirth, OP, Harem)" class="input-style">
+                <textarea id="novelSynopsis" placeholder="Synopsis: What is your story about?" rows="4" class="input-style"></textarea>
+                <label style="font-size:11px; opacity:0.5;">Cover Image:</label>
+                <input type="file" id="novelCover" accept="image/*" class="input-style" style="border:none;">
+                <button id="publishBtn" class="btn-primary">PUBLISH NOVEL</button>
+            </div>
+
+            <div class="card">
+                <h4>Chapter Scribe</h4>
+                <select id="selectNovel" class="input-style"></select>
+                <input id="chapTitle" placeholder="Chapter Title" class="input-style">
+                <textarea id="chapContent" placeholder="Write content..." rows="6" class="input-style"></textarea>
+                <button id="postChapBtn" onclick="publishChapter()" class="btn-primary" style="background:var(--rank);">POST CHAPTER</button>
+            </div>
+            <button onclick="auth.signOut(); location.reload();" class="btn-secondary">LOGOUT</button>
+        </div>
+    </div>
+</div>
+
+<div id="readerOverlay" class="overlay">
+    <div style="padding:15px; background:var(--card); display:flex; justify-content:space-between; position:sticky; top:0; z-index:100;">
+        <button onclick="closeOverlay()" style="background:none; border:none; color:white; font-weight:800;">✕ CLOSE</button>
+        <div id="readerTitle" style="font-size:13px; font-weight:800;">READING</div>
+        <div style="width:40px;"></div>
+    </div>
+    
+    <div id="novelHeader" style="padding:20px; background:var(--glass);">
+        <h2 id="viewTitle" style="margin:0;"></h2>
+        <p id="viewSynopsis" style="font-size:13px; opacity:0.7; font-style:italic;"></p>
+    </div>
+
+    <div id="chapterContent" style="padding:25px; font-size:18px; line-height:1.8;"></div>
+    
+    <div class="container" style="padding-bottom:100px;">
+        <h4>Comments</h4>
+        <div id="commentList"></div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <input id="commentIn" placeholder="Write comment..." class="input-style" style="margin:0;">
+            <button onclick="postComment()" class="btn-primary" style="width:80px;">POST</button>
+        </div>
+    </div>
+</div>
+
+<nav class="nav-bar">
+    <div class="nav-item active" onclick="showSection('home', this)">LIB</div>
+    <div class="nav-item" onclick="showSection('vault', this)">VAULT</div>
+    <div class="nav-item" onclick="showSection('inbox', this)">CHAT</div>
+    <div class="nav-item" onclick="showSection('write', this)">WRITE</div>
+</nav>
+
+<script>
+    // --- FIREBASE (Replace with your own) ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBz0refxUq767lr0pYXbXBG6Ns4RBG4eVs",
+      authDomain: "wnovel-aaa99.firebaseapp.com",
+      projectId: "wnovel-aaa99",
+      storageBucket: "wnovel-aaa99.firebasestorage.app",
+      messagingSenderId: "476794649269",
+      appId: "1:476794649269:web:ffc69d8f26849d30f9dcfc"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth(), db = firebase.firestore(), storage = firebase.storage();
+
+    let userProfile = {}, currentNovelId = "";
+
+    // --- AUTH LOGIC ---
+    function googleLogin() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+    function guestLogin() { auth.signInAnonymously(); }
+    async function emailLogin() {
+        const email = document.getElementById('emailIn').value, pass = document.getElementById('passIn').value;
+        if(!email || !pass) return alert("Fill fields!");
+        try {
+            await auth.signInWithEmailAndPassword(email, pass);
+        } catch(e) {
+            await auth.createUserWithEmailAndPassword(email, pass);
+        }
+    }
+
+    auth.onAuthStateChanged(user => {
+        if(user) {
+            document.getElementById('loginBox').style.display = "none";
+            document.getElementById('authorTools').style.display = "block";
+            db.collection("users").doc(user.uid).onSnapshot(doc => {
+                if(doc.exists) {
+                    userProfile = doc.data();
+                    document.getElementById('stonesCounter').innerText = `✨ ${userProfile.stones || 0}`;
+                    document.getElementById('xpCounter').innerText = `LVL ${Math.floor((userProfile.xp||0)/200)+1} • ${userProfile.xp || 0} XP`;
+                    document.getElementById('rankDisplay').innerText = userProfile.rank || "Mortal";
+                } else {
+                    db.collection("users").doc(user.uid).set({ stones: 30, xp: 0, name: user.displayName || "Cultivator", rank: "Mortal" });
+                }
             });
+            loadLibrary(); loadChat(); loadMyNovels(); checkCooldown();
+        }
+    });
 
-            document.getElementById('novel-title').value = "";
-            document.getElementById('novel-synopsis').value = "";
-            alert("Novel Published to the Empire!");
+    // --- REWARDS ---
+    const COOLDOWN = 2 * 60 * 60 * 1000;
+    document.getElementById('rewardAdBtn').onclick = function() {
+        const last = localStorage.getItem('lastAd');
+        if(last && (Date.now() - last < COOLDOWN)) return alert("Spirit Resting");
+        this.disabled = true;
+        setTimeout(async () => {
+            await db.collection("users").doc(auth.currentUser.uid).update({
+                stones: firebase.firestore.FieldValue.increment(10),
+                xp: firebase.firestore.FieldValue.increment(25)
+            });
+            localStorage.setItem('lastAd', Date.now());
+            checkCooldown();
+        }, 3000);
+    };
+
+    function checkCooldown() {
+        const last = localStorage.getItem('lastAd');
+        if(last && (Date.now() - last < COOLDOWN)) {
+            document.getElementById('rewardAdBtn').disabled = true;
+            document.getElementById('adTimer').style.display = "block";
+        }
+    }
+
+    // --- NOVEL LOGIC ---
+    function loadLibrary() {
+        db.collection("novels").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const list = document.getElementById('onlineNovels'); list.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                list.innerHTML += `
+                <div class="novel-item" onclick="openReader('${doc.id}')">
+                    <img src="${d.url}">
+                    <div style="flex:1;">
+                        <span style="font-size:10px; color:var(--stone);">${d.genre}</span>
+                        <h4 style="margin:0;">${d.title}</h4>
+                        <p style="font-size:10px; opacity:0.6; height:30px; overflow:hidden;">${d.synopsis || ''}</p>
+                        <small>By ${d.authorName}</small>
+                    </div>
+                </div>`;
+            });
         });
-    </script>
+    }
+
+    document.getElementById('publishBtn').onclick = async function() {
+        const title = document.getElementById('novelTitle').value, file = document.getElementById('novelCover').files[0];
+        const syn = document.getElementById('novelSynopsis').value;
+        if(!title || !file) return alert("Missing cover/title");
+        this.innerText = "Creating...";
+        const ref = storage.ref(`covers/${Date.now()}`);
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+        await db.collection("novels").add({
+            title, url, synopsis: syn, genre: document.getElementById('novelGenre').value,
+            authorId: auth.currentUser.uid, authorName: auth.currentUser.displayName || "Unknown",
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert("Published!"); this.innerText = "PUBLISH NOVEL";
+    };
+
+    async function publishChapter() {
+        const id = document.getElementById('selectNovel').value, t = document.getElementById('chapTitle').value, c = document.getElementById('chapContent').value;
+        await db.collection("novels").doc(id).collection("chapters").add({
+            title: t, content: c, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert("Chapter Added!");
+    }
+
+    async function openReader(id) {
+        currentNovelId = id;
+        document.getElementById('readerOverlay').style.display = "block";
+        const nDoc = await db.collection("novels").doc(id).get();
+        const nData = nDoc.data();
+        document.getElementById('viewTitle').innerText = nData.title;
+        document.getElementById('viewSynopsis').innerText = nData.synopsis || "No synopsis.";
+        
+        db.collection("novels").doc(id).collection("chapters").orderBy("createdAt", "asc").onSnapshot(snap => {
+            let h = "";
+            snap.forEach(d => h += `<h3>${d.data().title}</h3><p>${d.data().content}</p><hr style="opacity:0.1">`);
+            document.getElementById('chapterContent').innerHTML = h || "No chapters.";
+        });
+        loadComments(id);
+    }
+
+    // --- CHAT & COMMENTS ---
+    function sendChat() {
+        const m = document.getElementById('chatIn').value;
+        db.collection("globalChat").add({user: auth.currentUser.displayName || "Guest", msg: m, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+        document.getElementById('chatIn').value = "";
+    }
+    function loadChat() {
+        db.collection("globalChat").orderBy("createdAt", "desc").limit(20).onSnapshot(snap => {
+            const b = document.getElementById('chatBox'); b.innerHTML = "";
+            snap.forEach(d => b.innerHTML += `<div><b>${d.data().user}:</b> ${d.data().msg}</div>`);
+            b.scrollTop = b.scrollHeight;
+        });
+    }
+    function postComment() {
+        const m = document.getElementById('commentIn').value;
+        db.collection("novels").doc(currentNovelId).collection("comments").add({
+            user: auth.currentUser.displayName || "Guest", msg: m, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById('commentIn').value = "";
+    }
+    function loadComments(id) {
+        db.collection("novels").doc(id).collection("comments").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const l = document.getElementById('commentList'); l.innerHTML = "";
+            snap.forEach(d => l.innerHTML += `<div style="margin-bottom:10px;"><b>${d.data().user}:</b> ${d.data().msg}</div>`);
+        });
+    }
+
+    function loadMyNovels() {
+        db.collection("novels").where("authorId", "==", auth.currentUser.uid).onSnapshot(snap => {
+            const s = document.getElementById('selectNovel'), l = document.getElementById('myNovelsList');
+            s.innerHTML = ""; l.innerHTML = "";
+            snap.forEach(d => {
+                s.innerHTML += `<option value="${d.id}">${d.data().title}</option>`;
+                l.innerHTML += `<div class="card" style="padding:10px;">📙 ${d.data().title}</div>`;
+            });
+        });
+    }
+
+    function showSection(id, el) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active'); el.classList.add('active');
+    }
+    function closeOverlay() { document.getElementById('readerOverlay').style.display = 'none'; }
+</script>
 </body>
-</html>
+                </html>
