@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WNovel Pro | Spirit Stones Empire</title>
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8691102556824057" crossorigin="anonymous"></script>
+    <meta name="google-adsense-account" content="ca-pub-8691102556824057">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+    <style>
+        :root { --primary: #1a73e8; --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --accent: #fbbf24; --stone: #0ea5e9; --rare: #a855f7; --epic: #ec4899; }
+        
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
+        .container { max-width: 500px; margin: auto; padding: 15px; }
+        .card { background: var(--card); padding: 15px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* MLBB Style Badges */
+        .spirit-badge { background: var(--stone); color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; border: 1px solid #7dd3fc; }
+        .lvl-badge { background: var(--accent); color: #000; padding: 2px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; }
+        .rank-tag { font-size: 9px; font-weight: bold; text-transform: uppercase; padding: 2px 5px; border-radius: 4px; margin-right: 5px; }
+        .rare-tag { background: var(--rare); color: white; }
+
+        /* Navigation */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); background: #1e293b; display: flex; justify-content: space-around; padding: 12px 0; border-top: 2px solid var(--primary); z-index: 1000; border-radius: 20px 20px 0 0; }
+        .nav-item { font-size: 10px; font-weight: bold; color: #94a3b8; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
+        .nav-item.active { color: var(--primary); transform: translateY(-5px); }
+
+        /* Novel Items */
+        .novel-item { display: flex; gap: 15px; background: var(--card); padding: 12px; border-radius: 15px; margin-bottom: 12px; cursor: pointer; transition: 0.2s; }
+        .novel-item:hover { transform: scale(1.02); }
+        .novel-item img { width: 70px; height: 100px; border-radius: 8px; object-fit: cover; }
+        
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 2000; display: none; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .section { display: none; animation: fadeIn 0.3s; }
+        .section.active { display: block; }
+        
+        button { cursor: pointer; border-radius: 10px; font-weight: bold; border: none; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
+        .btn-primary { background: var(--primary); color: white; width: 100%; padding: 12px; }
+        .btn-event { background: linear-gradient(45deg, var(--rare), var(--epic)); color: white; padding: 10px; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- TOP STATUSBAR -->
+    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div>
+            <h2 style="margin:0; color: var(--primary); font-style: italic;">WNOVEL PRO</h2>
+            <div id="xpCounter" style="font-size:11px; color:var(--accent);">Level 1 [||||||||||]</div>
+        </div>
+        <div style="text-align: right;">
+            <div id="stonesCounter" class="spirit-badge">✨ 0</div>
+        </div>
+    </div>
+
+    <!-- HOME SECTION (LIBRARY & LEADERBOARD) -->
+    <div id="home" class="section active">
+        <div class="card" style="background: linear-gradient(135deg, #312e81, #1e1b4b); border: 1px solid #4338ca;">
+            <h4 style="margin:0; color: var(--accent);">🏆 TOP CULTIVATORS (SEASON 1)</h4>
+            <div id="leaderboard" style="margin-top:10px; font-size:12px;"></div>
+        </div>
+        <h3>Explore Worlds</h3>
+        <div id="onlineNovels">Connecting to Spirit Realm...</div>
+    </div>
+
+    <!-- EVENT SECTION (MLBB STYLE) -->
+    <div id="events" class="section">
+        <div class="card" style="background: linear-gradient(45deg, #1e293b, #334155); border-left: 5px solid var(--accent);">
+            <h3 style="margin:0; color: var(--accent);">🔥 DAILY MISSIONS</h3>
+            <p style="font-size:11px; opacity:0.8;">Complete tasks to earn rewards!</p>
+            <div style="margin-top:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+                    <span style="font-size:13px;">📺 Watch 1 Reward Ad</span>
+                    <button class="spirit-badge" onclick="claimMission('m1', 5)" id="m1">Claim 5✨</button>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+                    <span style="font-size:13px;">🎁 Daily Lucky Spin</span>
+                    <button class="spirit-badge" onclick="showSpin()">Go</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="text-align:center;">
+            <h4>🎰 LUCKY SPIN EVENT</h4>
+            <div id="wheel" style="width:80px; height:80px; border:4px dashed var(--accent); border-radius:50%; margin:15px auto; display:flex; align-items:center; justify-content:center; font-size:30px;">💎</div>
+            <button class="btn-primary" style="background:var(--accent); color:black;" onclick="startSpin()">Spin (5✨)</button>
+        </div>
+    </div>
+
+    <!-- COLLECTION / INVENTORY SECTION -->
+    <div id="collection" class="section">
+        <h3>🗃 MY COLLECTIONS</h3>
+        <div id="inventoryList" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <!-- Inventory items loaded here -->
+            <div class="card" style="text-align:center; opacity:0.5;">
+                <p style="font-size:20px;">🔒</p>
+                <p style="font-size:10px;">Locked Item</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAT SECTION -->
+    <div id="inbox" class="section">
+        <div class="card">
+            <h4>Global Chat</h4>
+            <div id="chatBox" style="height:300px; overflow-y:auto; margin-bottom:10px; font-size:13px; padding:5px;"></div>
+            <div style="display:flex; gap:5px;">
+                <input id="chatIn" placeholder="Talk to cultivators..." style="flex:1; background:#0f172a; color:white; border:1px solid #334155; padding:10px; border-radius:8px;">
+                <button class="btn-primary" style="width:auto;" onclick="sendChat()">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- AUTHOR SECTION -->
+    <div id="write" class="section">
+        <button id="loginBtn" class="btn-primary">Author Login with Google</button>
+        <div id="authorTools" style="display:none;">
+            <div class="card">
+                <h3>Write New Novel</h3>
+                <input id="novelTitle" placeholder="Title">
+                <textarea id="novelSynopsis" placeholder="Synopsis..." rows="3"></textarea>
+                <input type="file" id="novelCover" accept="image/*">
+                <button id="publishBtn" class="btn-primary">Publish to World</button>
+            </div>
+            <div id="myBooksList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- READER OVERLAY -->
+<div id="readerOverlay" class="overlay">
+    <div style="display:flex; justify-content:space-between;">
+        <button onclick="closeOverlay('readerOverlay')" style="background:none; color:white; font-size:20px;">✕</button>
+        <div class="spirit-badge">READING MODE</div>
+    </div>
+    <div id="readerBody"></div>
+    <div id="rewardBox" class="card" style="text-align:center; margin-top:20px; border:2px solid var(--stone);">
+        <h4>Chapter Locked</h4>
+        <p id="adStatus" style="font-size:12px;">Watch an ad to unlock this chapter and get 10✨</p>
+        <button class="btn-primary" id="adBtn">📺 WATCH AD</button>
+    </div>
+    <div id="contentArea" style="display:none; padding-top:20px;"></div>
+</div>
+
+<!-- NAVIGATION BAR -->
+<nav class="nav-bar">
+    <div class="nav-item active" onclick="showSection('home', this)">LIBRARY</div>
+    <div class="nav-item" onclick="showSection('events', this)">EVENTS</div>
+    <div class="nav-item" onclick="showSection('collection', this)">VAULT</div>
+    <div class="nav-item" onclick="showSection('inbox', this)">CHAT</div>
+    <div class="nav-item" onclick="showSection('write', this)">WRITE</div>
+</nav>
+
+<script>
+    // --- FIREBASE INITIALIZATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBz0refxUq767lr0pYXbXBG6Ns4RBG4eVs",
+      authDomain: "wnovel-aaa99.firebaseapp.com",
+      projectId: "wnovel-aaa99",
+      storageBucket: "wnovel-aaa99.firebasestorage.app",
+      messagingSenderId: "476794649269",
+      appId: "1:476794649269:web:ffc69d8f26849d30f9dcfc"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    let userProfile = {};
+
+    // --- AUTH & USER DATA ---
+    auth.onAuthStateChanged(user => {
+        if(user) {
+            document.getElementById('loginBtn').style.display = "none";
+            document.getElementById('authorTools').style.display = "block";
+            db.collection("users").doc(user.uid).onSnapshot(doc => {
+                if(doc.exists) {
+                    userProfile = doc.data();
+                    updateUI();
+                } else {
+                    db.collection("users").doc(user.uid).set({ 
+                        stones: 20, xp: 0, level: 1, 
+                        name: user.displayName, 
+                        frame: "default",
+                        title: "Novice" 
+                    });
+                }
+            });
+            loadLeaderboard();
+            loadInventory();
+            loadChat();
+        }
+    });
+
+    document.getElementById('loginBtn').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+
+    function updateUI() {
+        document.getElementById('stonesCounter').innerText = `✨ ${userProfile.stones || 0}`;
+        document.getElementById('xpCounter').innerText = `Level ${userProfile.level || 1} [XP: ${userProfile.xp || 0}]`;
+    }
+
+    // --- SYSTEM LOGIC (XP, REWARDS, SPIN) ---
+    function gainXP(pts) {
+        let newXP = (userProfile.xp || 0) + pts;
+        let newLvl = Math.floor(Math.sqrt(newXP / 50)) + 1;
+        db.collection("users").doc(auth.currentUser.uid).update({ xp: newXP, level: newLvl });
+    }
+
+    window.startSpin = async () => {
+        if(userProfile.stones < 5) return alert("Kulang ang Spirit Stones!");
+        await db.collection("users").doc(auth.currentUser.uid).update({ stones: firebase.firestore.FieldValue.increment(-5) });
+        
+        const wheel = document.getElementById('wheel');
+        wheel.innerText = "🌀";
+        setTimeout(() => {
+            const prizes = [0, 10, 20, 50, 5, 0];
+            const win = prizes[Math.floor(Math.random() * prizes.length)];
+            if(win > 0) {
+                db.collection("users").doc(auth.currentUser.uid).update({ stones: firebase.firestore.FieldValue.increment(win) });
+                alert(`🎁 Jackpot! Nakakuha ka ng ${win} Stones!`);
+            } else { alert("😢 No luck today!"); }
+            wheel.innerText = "💎";
+        }, 1500);
+    };
+
+    // --- MISSION SYSTEM ---
+    window.claimMission = (id, reward) => {
+        db.collection("users").doc(auth.currentUser.uid).update({ stones: firebase.firestore.FieldValue.increment(reward) });
+        gainXP(30);
+        document.getElementById(id).innerText = "CLAIMED";
+        document.getElementById(id).disabled = true;
+    };
+
+    // --- REWARDED ADS SIMULATION ---
+    window.unlockWithAd = (id) => {
+        const btn = document.getElementById('adBtn');
+        const status = document.getElementById('adStatus');
+        btn.disabled = true;
+        let timer = 10;
+        const countdown = setInterval(() => {
+            status.innerHTML = `📺 Ad playing... Reward in <b>${timer}s</b>`;
+            timer--;
+            if(timer < 0) {
+                clearInterval(countdown);
+                db.collection("users").doc(auth.currentUser.uid).update({ stones: firebase.firestore.FieldValue.increment(10) });
+                gainXP(50);
+                document.getElementById('rewardBox').style.display = "none";
+                document.getElementById('contentArea').style.display = "block";
+                loadChapters(id);
+            }
+        }, 1000);
+    };
+
+    // --- NAVIGATION & UI ---
+    function showSection(id, el) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+    }
+
+    function closeOverlay(id) { document.getElementById(id).style.display = 'none'; }
+
+    // --- DATA LOADING ---
+    db.collection("novels").orderBy("createdAt", "desc").onSnapshot(snap => {
+        const list = document.getElementById('onlineNovels'); list.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            list.innerHTML += `<div class="novel-item" onclick="openReader('${doc.id}')">
+                <img src="${d.url}">
+                <div>
+                    <h4 style="margin:0;">${d.title}</h4>
+                    <p style="font-size:12px; opacity:0.7;">Author: ${d.authorName}</p>
+                    <span class="lvl-badge">FREE CHAPTERS</span>
+                </div>
+            </div>`;
+        });
+    });
+
+    window.openReader = (id) => {
+        document.getElementById('readerOverlay').style.display = 'block';
+        document.getElementById('adBtn').onclick = () => unlockWithAd(id);
+        db.collection("novels").doc(id).get().then(doc => {
+            const d = doc.data();
+            document.getElementById('readerBody').innerHTML = `
+                <img src="${d.url}" style="width:100%; height:200px; object-fit:cover; border-radius:15px;">
+                <h2>${d.title}</h2><p style="font-size:14px; opacity:0.8;">${d.synopsis}</p>
+            `;
+        });
+    };
+
+    function loadChapters(id) {
+        db.collection("novels").doc(id).collection("chapters").orderBy("createdAt", "asc").get().then(snap => {
+            const area = document.getElementById('contentArea'); area.innerHTML = "";
+            snap.forEach(doc => {
+                const c = doc.data();
+                area.innerHTML += `<div class="card"><h4>${c.title}</h4><p style="white-space: pre-line;">${c.content}</p></div>`;
+            });
+        });
+    }
+
+    function loadLeaderboard() {
+        db.collection("users").orderBy("xp", "desc").limit(5).get().then(snap => {
+            const lb = document.getElementById('leaderboard'); lb.innerHTML = "";
+            snap.forEach((doc, i) => {
+                const u = doc.data();
+                lb.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <span>#${i+1} ${u.name}</span> <span style="color:var(--accent)">LVL ${u.level}</span>
+                </div>`;
+            });
+        });
+    }
+
+    function loadInventory() {
+        const inv = document.getElementById('inventoryList');
+        // Simple starter item display
+        inv.innerHTML = `<div class="card" style="text-align:center; border:1px solid var(--accent);">
+            <p style="font-size:20px;">🖼️</p><p style="font-size:10px;">Default Frame</p>
+        </div>`;
+    }
+
+    // --- CHAT LOGIC ---
+    function loadChat() {
+        db.collection("globalChat").orderBy("createdAt", "desc").limit(30).onSnapshot(snap => {
+            const box = document.getElementById('chatBox'); box.innerHTML = "";
+            snap.forEach(doc => {
+                const m = doc.data();
+                box.innerHTML += `<div style="margin-bottom:8px;">
+                    <span class="rank-tag rare-tag">LVL ${m.lvl || 1}</span>
+                    <b style="color:var(--stone);">${m.user}:</b> ${m.msg}
+                </div>`;
+            });
+            box.scrollTop = 0;
+        });
+    }
+
+    window.sendChat = () => {
+        const msg = document.getElementById('chatIn').value;
+        if(!msg) return;
+        db.collection("globalChat").add({
+            user: auth.currentUser.displayName,
+            msg: msg,
+            lvl: userProfile.level || 1,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById('chatIn').value = "";
+    };
+
+    // --- PUBLISH LOGIC ---
+    document.getElementById('publishBtn').onclick = async () => {
+        const file = document.getElementById('novelCover').files[0];
+        if(!file) return alert("Paki-upload ang cover!");
+        const ref = storage.ref(`covers/${Date.now()}`);
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+        await db.collection("novels").add({
+            title: document.getElementById('novelTitle').value,
+            synopsis: document.getElementById('novelSynopsis').value,
+            url: url,
+            authorId: auth.currentUser.uid,
+            authorName: auth.currentUser.displayName,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert("Published!");
+        showSection('home', document.querySelector('.nav-item'));
+    };
+</script>
+</body>
+</html>
